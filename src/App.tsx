@@ -1,37 +1,26 @@
 // src/App.tsx
-//import './App.css'
 import { useState } from 'react'
 import './App.css'
 
-// Define what a Todo looks like
 interface Todo {
   id: number
   text: string
 }
 
 function App() {
-  // State for the list of todos — typed as an array of Todo objects
   const [todos, setTodos] = useState<Todo[]>([])
-
-  // State for the input field — TypeScript infers this as string
   const [inputValue, setInputValue] = useState('')
-   
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()  // Stop the browser from refreshing the page
 
-    // Don't add empty todos
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
     if (!inputValue.trim()) return
 
-    // Create a new todo object that matches our Todo interface
     const newTodo: Todo = {
-      id: Date.now(),       // Unique ID using current timestamp
-      text: inputValue.trim()  // Remove extra whitespace
+      id: Date.now(),
+      text: inputValue.trim()
     }
 
-    // Add the new todo to the existing array (spread operator creates a copy)
     setTodos([...todos, newTodo])
-
-    // Clear the input field
     setInputValue('')
   }
 
@@ -57,8 +46,6 @@ function App() {
         {todos.map((todo) => (
           <li key={todo.id} className="todo-item">
             <span>{todo.text}</span>
-          
-
             <button
               className="delete-btn"
               onClick={() => deleteTodo(todo.id)}
