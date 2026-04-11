@@ -1,31 +1,67 @@
-// src/App.tsx
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+// @ts-expect-error Supabase client module has no TypeScript types
+import { supabase } from './lib/supabaseClient'
 import './App.css'
 
-interface Todo {
+type Todo = {
   id: number
   text: string
+  created_at: string
 }
 
 function App() {
   const [todos, setTodos] = useState<Todo[]>([])
   const [inputValue, setInputValue] = useState('')
+  const [loading, setLoading] = useState(true)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  /// eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    fetchTodos()
+  }, [])
+
+  async function fetchTodos() {
+    setLoading(true)
+    const { data, error } = await supabase
+      .from('todos')
+      .select('*')
+      .order('created_at', { ascending: true })
+
+    if (error) {
+      console.error('Error fetching todos:', error)
+    } else {
+      setTodos(data || [])
+    }
+    setLoading(false)
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!inputValue.trim()) return
 
-    const newTodo: Todo = {
-      id: Date.now(),
-      text: inputValue.trim()
-    }
+    const { data, error } = await supabase
+      .from('todos')
+      .insert({ text: inputValue.trim() })
+      .select()
 
-    setTodos([...todos, newTodo])
-    setInputValue('')
+    if (error) {
+      console.error('Error adding todo:', error)
+    } else {
+      setTodos([...todos, data[0]])
+      setInputValue('')
+    }
   }
 
-  const deleteTodo = (id: number) => {
-    setTodos(todos.filter((todo) => todo.id !== id))
+  const deleteTodo = async (id: number) => {
+    const { error } = await supabase
+      .from('todos')
+      .delete()
+      .eq('id', id)
+
+    if (error) {
+      console.error('Error deleting todo:', error)
+    } else {
+      setTodos(todos.filter(todo => todo.id !== id))
+    }
   }
 
   return (
@@ -42,19 +78,23 @@ function App() {
         <button type="submit">Add</button>
       </form>
 
-      <ul className="todo-list">
-        {todos.map((todo) => (
-          <li key={todo.id} className="todo-item">
-            <span>{todo.text}</span>
-            <button
-              className="delete-btn"
-              onClick={() => deleteTodo(todo.id)}
-            >
-              Delete
-            </button>
-          </li>
-        ))}
-      </ul>
+      {loading ? (
+        <p>Loading todos...</p>
+      ) : (
+        <ul className="todo-list">
+          {todos.map(todo => (
+            <li key={todo.id} className="todo-item">
+              <span>{todo.text}</span>
+              <button
+                className="delete-btn"
+                onClick={() => deleteTodo(todo.id)}
+              >
+                Delete
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   )
 }
